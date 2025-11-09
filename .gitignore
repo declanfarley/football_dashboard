@@ -1,4 +1,4 @@
-data/
-*.csv
-*.parquet
+/data/**/*.csv
+/data
 
+!*.csv
