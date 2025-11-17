@@ -21,9 +21,17 @@ def create_weekly_boxscore_csv(year: int, week: int, output_file: str) -> None:
     weekly_data['receiving_tds'] = ((weekly_data['td_team'] == weekly_data['posteam']) & (weekly_data['play_type'] == 'pass')).astype(int)
     weekly_data["off_td"] = (weekly_data['td_team'] == weekly_data['posteam']).astype(int)
     weekly_data["def_td_allowed"] = ((weekly_data['td_team'] != weekly_data['posteam']) & (weekly_data['td_team'].notnull())).astype(int)
+    weekly_data['epa_per_rush'] = weekly_data['epa'].where(weekly_data['play_type'] == 'run', 0)
+    weekly_data['epa_per_pass'] = weekly_data['epa'].where(weekly_data['play_type'] == 'pass', 0)
+    weekly_data['dropback'] = (weekly_data['qb_dropback'] == 1).astype(int)
+    weekly_data['pressure_true'] = weekly_data['was_pressure'].fillna(0)
+    weekly_data['pressure'] = ((weekly_data['sack'] == 1) | (weekly_data['qb_hit'] == 1) | (weekly_data['desc'].str.contains("pressure", case=False, na=False))).astype(int)
+    weekly_data['sacks_taken'] = weekly_data['sack'].fillna(0)
+    weekly_data['qh_hits_taken'] = weekly_data['qb_hit'].fillna(0)
     # now we are going to create the boxscore stats for the overall team based off the play by play data
     # group by team and aggregate relevant statistics
     boxscore_stats = {
+        'posteam_type' : 'first',
         'passing_yards': 'sum',
         'rushing_yards': 'sum',
         'rushing_tds': 'sum',
@@ -38,7 +46,18 @@ def create_weekly_boxscore_csv(year: int, week: int, output_file: str) -> None:
         'field_goal_attempt': 'sum',
         'extra_point_result': lambda x : (x == 'good').sum(),
         'extra_point_attempt': 'sum',
-        'posteam_score' : 'max'
+        'posteam_score' : 'max',
+        'fourth_down_converted' : 'sum',
+        'fourth_down_failed' : 'sum',
+        'third_down_converted' : 'sum',
+        'third_down_failed' : 'sum',
+        'epa_per_rush': 'mean',
+        'epa_per_pass': 'mean',
+        'dropback': 'sum',
+        'pressure_true': 'sum',
+        'pressure': 'sum',
+        'sacks_taken': 'sum',
+        'qh_hits_taken': 'sum'
     }
 
     weekly_data = weekly_data.groupby(['old_game_id_x', 'posteam']).agg(
@@ -55,13 +74,12 @@ if __name__ == "__main__":
     This will create a CSV file named 'nfl_boxscore_xxxx_week_yy.csv' for each week from 1 to 18
     for each year from 2000 to 2024, containing all the NFL boxscore data for that week.
     """
-    output_filename = "nfl_boxscore_sample.csv"
+    output_filename = "boxscore/nfl_boxscore_sample.csv"
     create_weekly_boxscore_csv(2023, 1, output_filename)
     # for year in range(2000, 2025):
+    #     print(year)
     #     for week in range(1, 19):
-    #         if year < 2021 and week > 17:
+    #         if year < 2021 and week == 18:
     #             continue  # Skip weeks beyond 17 for years before 2021
-    #         output_filename = f"nfl_boxscore_{year}_{week}.csv"
+    #         output_filename = f"boxscore/year/nfl_boxscore_{year}_{week}.csv"
     #         create_weekly_boxscore_csv(year, week, output_filename)
-    #         break
-    #     break
